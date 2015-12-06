@@ -45,14 +45,21 @@ def input_credentials_if_unauthorized(func):
                 # If our user receives a ForbiddenException propagate it, not
                 # log with other user
                 raise e
-        except AuthenticationException:
-            # Token expired or not valid, so clean the token and repeat the call
-            # (will be anonymous call but exporting who is calling)
-            self._store_login((self.user, None))
-            self.rest_client.token = None
-            # Set custom headers of mac_digest and username
-            self.set_custom_headers(self.user)
-            return wrapper(self, *args, **kwargs)
+        except AuthenticationException as e:
+            from urlparse import urlparse
+            conan_server = urlparse(self.rest_client.remote_url).netloc
+            if not conan_server.startswith('conan.io'):
+                self.user_io.out.error('Authentification to server "%s" failure. '
+                                      'Maybe your user/password wasn\'t added to server config' % conan_server)
+                raise e
+            else:
+                # Token expired or not valid, so clean the token and repeat the call
+                # (will be anonymous call but exporting who is calling)
+                self._store_login((self.user, None))
+                self.rest_client.token = None
+                # Set custom headers of mac_digest and username
+                self.set_custom_headers(self.user)
+                return wrapper(self, *args, **kwargs)
 
     def retry_with_new_token(self, *args, **kwargs):
         """Try LOGIN_RETRIES to obtain a password from user input for which
