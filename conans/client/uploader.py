@@ -17,8 +17,7 @@ class ConanUploader(object):
         if os.path.exists(export_path):
             if not force:
                 self._check_package_date(conan_ref)
-
-            self._user_io.out.info("Uploading %s" % str(conan_ref))
+            self._user_io.out.info('Uploading %s to "%s" remote' % (str(conan_ref), self._remote))
             self._remote_manager.upload_conan(conan_ref, self._remote)
 
             if all_packages:
